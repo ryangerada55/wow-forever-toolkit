@@ -71,7 +71,10 @@ check_files() {
 
 if [ "${1:-}" = "--packaged" ]; then
 	pkg=${2:-}
-	[ -n "$pkg" ] && [ -d "$pkg" ] || { echo "::error::--packaged needs the packaged addon folder, for example .release/Tx_Example"; exit 1; }
+	if [ -z "$pkg" ] || [ ! -d "$pkg" ]; then
+		echo "::error::--packaged needs the packaged addon folder, for example .release/Tx_Example"
+		exit 1
+	fi
 	found=0
 	for toc in "$pkg"/*.toc; do
 		[ -f "$toc" ] || continue

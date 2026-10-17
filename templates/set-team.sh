@@ -77,8 +77,9 @@ fi
 # The templates must still be in the state team.conf describes (no half-done manual replacement).
 [ -f "$here/addon-repo/${CT}_Example.toc" ] ||
 	fail "addon-repo/${CT}_Example.toc is missing: the templates do not match team.conf (token $CT). Restore them (git checkout -- templates) and run this script instead of replacing by hand."
-[ -f "$here/shared-lib/Lib${CT}-1.0.lua" ] && [ -f "$here/shared-lib/Lib${CT}-1.0.toc" ] ||
+if [ ! -f "$here/shared-lib/Lib${CT}-1.0.lua" ] || [ ! -f "$here/shared-lib/Lib${CT}-1.0.toc" ]; then
 	fail "shared-lib/Lib${CT}-1.0.lua or .toc is missing: the templates do not match team.conf (token $CT). Restore them (git checkout -- templates)."
+fi
 grep -q "^package-as: ${CT}_Example" "$here/addon-repo/.pkgmeta" ||
 	fail "addon-repo/.pkgmeta does not say 'package-as: ${CT}_Example': the templates were edited by hand. Restore them (git checkout -- templates)."
 
