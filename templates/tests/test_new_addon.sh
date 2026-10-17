@@ -53,10 +53,10 @@ while [ $# -gt 0 ]; do
 	shift
 done
 if [ -z "$PACKAGER" ] && [ -f "$HOME/dev/packager/release.sh" ]; then PACKAGER="$HOME/dev/packager/release.sh"; fi
-[ -n "$PACKAGER" ] && [ -f "$PACKAGER" ] || {
+if [ -z "$PACKAGER" ] || [ ! -f "$PACKAGER" ]; then
 	echo "The BigWigs packager was not found: pass --packager PATH/release.sh or set PACKAGER (see --help)." >&2
 	exit 2
-}
+fi
 "$PKG_BASH" -c '[ "${BASH_VERSINFO[0]}" -gt 4 ] || { [ "${BASH_VERSINFO[0]}" -eq 4 ] && [ "${BASH_VERSINFO[1]}" -ge 3 ]; }' 2>/dev/null || {
 	echo "The packager needs bash 4.3 or newer; pass --packager-bash PATH (macOS: \"\$(brew --prefix)/bin/bash\")." >&2
 	exit 2
