@@ -1,0 +1,37 @@
+# Line endings for a WoW addon team on macOS and Windows: LF in the repository and in every
+# checkout. Same rules as wow-forever-toolkit/devsetup/.gitattributes.
+# - The game loads LF and CRLF alike, and the BigWigs packager rewrites .lua .md .toc .txt .xml
+#   to CRLF in the zip anyway (LF with -u), so repository line endings never reach players.
+# - Git for Windows installs with core.autocrlf=true. Without this file a Windows checkout gets
+#   CRLF, and bash scripts then fail with "$'\r': command not found".
+# - One convention keeps diffs clean between Mac and Windows users.
+* text=auto eol=lf
+
+*.lua    text eol=lf
+*.toc    text eol=lf
+*.xml    text eol=lf
+*.md     text eol=lf
+*.txt    text eol=lf
+*.json   text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.py     text eol=lf
+*.sh     text eol=lf
+.pkgmeta text eol=lf
+*.ps1    text eol=lf
+*.cmd    text eol=crlf
+*.bat    text eol=crlf
+# .env (packager tokens) is git-ignored, so git never converts it. .editorconfig sets LF for it;
+# a CRLF .env sends every token with a trailing carriage return.
+
+# Game assets and archives: never convert.
+*.blp    binary
+*.tga    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.ogg    binary
+*.mp3    binary
+*.ttf    binary
+*.otf    binary
+*.zip    binary

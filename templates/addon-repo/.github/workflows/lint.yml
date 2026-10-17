@@ -1,0 +1,124 @@
+# Lint (and a test package) for every pull request and every push to main.
+# release.yml runs the same jobs, test package included, before it publishes a tag.
+# Uses no secrets, so it also runs safely on pull requests from forks.
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+    inputs:
+      skip-package:
+        description: Skip the test package (release.yml builds the real one)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: luacheck and TOC checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Every .sh file must be stored as executable (mode 100755). Git for Windows does not track
+      # the executable bit (core.filemode=false), so a script added there is stored as 100644 and
+      # fails on macOS and Linux with "Permission denied". Fix: git update-index --chmod=+x FILE
+      - name: Shell scripts are executable in git
+        run: |
+          bad=$(git ls-files -s -- '*.sh' | awk -F '\t' '{ split($1, m, " "); if (m[1] != "100755") print m[1] "\t" $2 }')
+          if [ -n "$bad" ]; then
+            printf '%s\n' "$bad" | while IFS="$(printf '\t')" read -r mode f; do
+              echo "::error file=$f::$f is stored with mode $mode, not 100755 (executable). Fix: git update-index --chmod=+x '$f'"
+            done
+            exit 1
+          fi
+          echo "Every .sh file is executable."
+
+      # WoW runs Lua 5.1, so compile and lint with Lua 5.1.
+      - uses: leafo/gh-actions-lua@6919171ccf181b826f44b9bca76307b577217377 # v13.0.0
+        with:
+          luaVersion: "5.1"
+      - uses: leafo/gh-actions-luarocks@35d062def313a7699a0d513e996bcf4352f05389 # v6.1.0
+
+      # luacheck accepts some newer syntax even with std = "lua51"; the real 5.1 parser does not.
+      # loadfile only compiles, nothing runs. (.lua* skips the Lua and LuaRocks installs above;
+      # ./patchwatch only exists if patchwatch was vendored, which is not recommended.)
+      - name: Compile check (Lua 5.1)
+        run: >
+          find . -name '*.lua' -not -path './.release/*' -not -path './Libs/*' -not -path './.lua*'
+          -not -path './patchwatch/*'
+          -print0 | xargs -0 -I{} lua -e "assert(loadfile([[{}]]))"
+
+      - name: Install luacheck
+        run: luarocks install luacheck 1.2.0
+
+      - name: luacheck (settings in .luacheckrc)
+        run: luacheck . --no-color --codes
+
+      - name: TOC checks
+        run: bash .github/scripts/check-toc.sh
+
+      # Upper/lower case of every path the TOC, XML and Lua media strings name, missing files,
+      # single backslashes in quoted Lua strings, names Windows cannot store. A copy of
+      # devsetup/check_paths.py from the toolkit (exit 1 on errors, warnings only print).
+      - name: Path checks
+        run: python3 .github/scripts/check_paths.py .
+
+  package:
+    name: Test package (no upload)
+    needs: lint
+    if: ${{ !inputs.skip-package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the packager needs the tags and history for the version string
+          persist-credentials: false
+
+      # Same step as in release.yml: svn externals need Subversion on the runner.
+      - name: Install Subversion for svn externals
+        run: |
+          if grep -Eq '^[[:space:]]*([^#[:space:]].*)?(repos\.(wowace|curseforge)\.com|svn\.(wowace|curseforge)\.com|svn://|type:[[:space:]]*svn)' .pkgmeta; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq subversion
+            svn --version --quiet
+          else
+            echo "No svn externals in .pkgmeta."
+          fi
+
+      # -d = build the zip but upload nothing. No tokens are passed.
+      # Pinned to master (2026-10-10): the v2 tag (v2.6.1) lacks the October Forever fixes.
+      - uses: BigWigsMods/packager@0f24d2169de3ceb3b79a981311b2ebab4c6160c7 # master
+        with:
+          args: -d
+
+      # The packaged folder must hold every file its TOC lists, libraries included: a library
+      # renamed in the TOC but not in its own repository is packaged without error and then fails
+      # in game with "Cannot find a library instance". Then load the packaged addon, libraries
+      # and all, in the smoke harness on each client its TOC lists (tests/harness/run.sh).
+      - uses: leafo/gh-actions-lua@6919171ccf181b826f44b9bca76307b577217377 # v13.0.0
+        with:
+          luaVersion: "5.1"
+
+      - name: Check the packaged folder and smoke-load it (Lua 5.1)
+        env:
+          LUA: lua
+        run: |
+          name=$(tr -d '\r' < .pkgmeta | sed -n 's/^package-as:[[:space:]]*//p' | head -n 1)
+          bash .github/scripts/check-toc.sh --packaged ".release/$name"
+          bash tests/harness/run.sh ".release/$name"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-package
+          path: .release/*.zip
+          retention-days: 14
+          if-no-files-found: warn

@@ -1,0 +1,3 @@
+## Title: Blizzard Project Constants
+ProjectConstants.lua
+Camelot\ProjectConstants.lua [AllowLoadGameType camelot]

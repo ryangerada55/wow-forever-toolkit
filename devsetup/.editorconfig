@@ -1,0 +1,27 @@
+# EditorConfig for WoW addon work on macOS and Windows (https://editorconfig.org).
+# Copy to the root of every addon repository. VS Code needs the
+# "EditorConfig.EditorConfig" extension.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# TOC files must stay UTF-8 *without* a BOM ("utf-8" in EditorConfig means no BOM).
+# Blizzard ships 0 TOC files with a BOM.
+[*.toc]
+charset = utf-8
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{cmd,bat}]
+end_of_line = crlf
+
+# Indentation is a team choice and is left out on purpose. Blizzard's UI code
+# and BigWigs use tabs; Questie uses spaces. To pick tabs, add:
+# [*.{lua,xml,toc}]
+# indent_style = tab
+# indent_size = 4

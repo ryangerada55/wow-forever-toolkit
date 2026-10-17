@@ -1,0 +1,19 @@
+# Packager output
+.release/
+
+# Libraries fetched by the packager (.pkgmeta externals). Never commit them.
+Libs/
+
+# Local packager secrets (CF_API_TOKEN=..., WAGO_API_TOKEN=...). The packager runs this file
+# with bash, so keep it LF-only and never commit it.
+.env
+
+# OS and editor clutter (macOS, Windows)
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*~

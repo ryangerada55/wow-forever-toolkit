@@ -1,0 +1,1 @@
+local isForever = false

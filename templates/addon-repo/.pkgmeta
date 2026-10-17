@@ -1,0 +1,109 @@
+# .pkgmeta: instructions for the BigWigs packager (https://github.com/BigWigsMods/packager),
+# which builds the zip and uploads it (.github/workflows/release.yml).
+# One repository = one CurseForge/Wago project = one zip.
+
+# Folder name inside the zip. Must equal the TOC base name (Tx_Example.toc).
+package-as: Tx_Example
+
+# Release notes for CurseForge, Wago and GitHub come from CHANGELOG.md. Without this the
+# packager writes a changelog from "git log" over the whole repository.
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+# Copy LICENSE into every addon folder of the zip (matters once move-folders is used).
+license-output: LICENSE
+
+# Libraries are fetched at build time into Libs/ (git-ignored), never committed.
+# ALWAYS pin every external, so that rebuilding an old tag ships the same library code:
+#   tag: NAME                     a release tag of the library
+#   commit: <40-character sha>    the full commit id, for fixes that are in no release yet
+# Without a pin the packager takes whatever the default branch holds at build time, and
+# "branch:" is not a pin either. Keep comments on their own lines: a comment after a value
+# ("tag: v1.0.0   # note") breaks the build.
+externals:
+  Libs/LibTx-1.0:
+    url: https://github.com/YOUR-ORG/LibTx-1.0
+    tag: v1.0.0
+
+  # Third-party libraries, pinned for WoW: Forever 1.60.1 (checked against build 70425 on
+  # 2026-10-16; the reasons are in README.md, "Third-party libraries"). Uncomment what you use
+  # AND add its lines to the TOC, before your own files (README.md, "TOC lines for the libraries
+  # above"): a library the TOC does not list is packaged but never loaded.
+  #
+  # Ace3, including LibStub, CallbackHandler-1.0 and ChatThrottleLib (in AceComm-3.0).
+  # Forever needs Ace3 master: the newest release, Release-r1403 (2026-08-12), predates the
+  # Forever fixes. Its AceDB-3.0 (MINOR 33) keys character data "Name - Realm" without the
+  # surname and realm data by realm instead of by ruleset. Master 40f4cc1 (2026-10-02) has
+  # AceDB-3.0 MINOR 39 and lists 16001 in Ace3.toc. Use the same commit for every Ace3 folder.
+  # When a release newer than r1403 exists, switch all of them to "tag: Release-rNNNN".
+  # Libs/LibStub:
+  #   url: https://github.com/WoWUIDev/Ace3
+  #   commit: 40f4cc1356ae7fcc0cf71fc0a19dc7d50d6ae6c2
+  #   path: LibStub
+  #   curse-slug: ace3
+  # Libs/CallbackHandler-1.0:
+  #   url: https://github.com/WoWUIDev/Ace3
+  #   commit: 40f4cc1356ae7fcc0cf71fc0a19dc7d50d6ae6c2
+  #   path: CallbackHandler-1.0
+  #   curse-slug: ace3
+  # Libs/AceDB-3.0:
+  #   url: https://github.com/WoWUIDev/Ace3
+  #   commit: 40f4cc1356ae7fcc0cf71fc0a19dc7d50d6ae6c2
+  #   path: AceDB-3.0
+  #   curse-slug: ace3
+  # Libs/AceComm-3.0:
+  #   url: https://github.com/WoWUIDev/Ace3
+  #   commit: 40f4cc1356ae7fcc0cf71fc0a19dc7d50d6ae6c2
+  #   path: AceComm-3.0
+  #   curse-slug: ace3
+  # Other Ace3 folders the same way: AceAddon-3.0, AceEvent-3.0, AceTimer-3.0, AceConsole-3.0,
+  # AceDBOptions-3.0, AceConfig-3.0, AceGUI-3.0, AceLocale-3.0, AceSerializer-3.0.
+  #
+  # LibDataBroker-1.1 (pure Lua, unchanged since 2008; v1.1.4 is the newest commit, 1a63ede).
+  # Libs/LibDataBroker-1.1:
+  #   url: https://github.com/tekkub/libdatabroker-1-1
+  #   tag: v1.1.4
+  #
+  # HereBeDragons-2.0: Forever map data from 2.18-release (2026-10-03, commit 90a7b2d) on.
+  # It needs LibStub and CallbackHandler-1.0 loaded before it (from Ace3, above).
+  # Libs/HereBeDragons:
+  #   url: https://github.com/Nevcairiel/HereBeDragons
+  #   tag: 2.18-release
+  #
+  # LibDBIcon-1.0 and LibSharedMedia-3.0 exist only in WowAce's Subversion repositories (no git
+  # mirror). Pin a /trunk URL with "tag:" set to an svn tag; list the tags on your own machine
+  # with "svn ls https://repos.wowace.com/wow/libdbicon-1-0/tags". The workflows install
+  # Subversion when this file names such a URL. On Forever, prefer the addon compartment
+  # (## AddonCompartmentFunc in the TOC) to a LibDBIcon minimap button; if you do embed
+  # LibDBIcon, use MINOR 57 or newer (older copies size the button like Classic on Forever).
+  # Libs/LibDBIcon-1.0:
+  #   url: https://repos.wowace.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
+  #   tag: SVN-TAG
+  # Libs/LibSharedMedia-3.0:
+  #   url: https://repos.wowace.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
+  #   tag: SVN-TAG
+
+# CurseForge relations by project slug. A team "core" addon that players must install goes
+# under required-dependencies (and in the TOC as ## Dependencies: Tx_Core).
+# required-dependencies:
+#   - tx-core
+# tools-used:
+#   - bugsack
+
+# Several addon folders in one zip, e.g. a load-on-demand options addon. Only for folders
+# that always ship together; a separately listed addon gets its own repository.
+# move-folders:
+#   Tx_Example/Options: Tx_Example_Options
+
+# Never packaged anyway: dot-files and dot-folders (.github, .luacheckrc, ...) and whatever git
+# ignores or does not track. Everything else goes into the zip unless it is listed here. Keep
+# comments on their own lines here too.
+ignore:
+  - README.md
+  # the smoke harness (tests/harness)
+  - tests
+  # notes such as docs/curseforge.md (or keep them in .github/)
+  - docs
+  # only if patchwatch is vendored into this repository (not recommended; patchwatch/README.md)
+  - patchwatch

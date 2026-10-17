@@ -1,0 +1,6 @@
+﻿## Interface: 16000
+## Interface-Camelot: 16000
+## Title: Patchwatch Fixture (Forever)
+Libs\LibFixture\LibFixture.lua
+Core.lua
+UI.xml

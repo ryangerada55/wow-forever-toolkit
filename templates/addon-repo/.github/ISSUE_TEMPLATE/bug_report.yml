@@ -1,0 +1,139 @@
+name: Bug report
+description: Something in Tx Example is broken, shows a Lua error or behaves differently than described.
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! A good report names the exact game client and addon version and
+        includes the full error text. How to get each one: [SUPPORT.md](https://github.com/YOUR-ORG/.github/blob/main/SUPPORT.md).
+        Questions and help requests belong on [Discord](https://discord.gg/YOUR-INVITE), not here.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you report
+      options:
+        - label: I searched the open and closed issues and this is not a duplicate.
+          required: true
+        - label: I am using the newest version of Tx Example for my game client.
+          required: true
+
+  - type: dropdown
+    id: flavor
+    attributes:
+      label: Game flavor
+      description: Which client were you playing?
+      options:
+        - "WoW: Forever"
+        - "WoW: Forever beta or stress test"
+        - "Retail (Midnight)"
+        - "Retail PTR or beta"
+        - "Classic Era (including Hardcore)"
+        - "Other Classic client (TBC Anniversary, MoP Classic, ...)"
+    validations:
+      required: true
+
+  - type: input
+    id: build
+    attributes:
+      label: Game build
+      description: Type `/dump GetBuildInfo()` in the chat box and copy what it prints (the game asks once before it allows such commands). If that does nothing, copy the version and build shown on the game's login screen.
+      placeholder: '"1.60.1", "70425", ..., 16001'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - "Windows"
+        - "macOS (Apple silicon: M1 or newer)"
+        - "macOS (Intel)"
+        - "Other (Linux, Steam Deck, ...)"
+    validations:
+      required: true
+
+  - type: input
+    id: addon-version
+    attributes:
+      label: Tx Example version
+      description: Type `/txexample version` and paste the line it prints (it also shows the game build and OS). Or read the version in your addon manager. "Latest" is not a version.
+      placeholder: v1.2.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-source
+    attributes:
+      label: Installed with
+      options:
+        - "CurseForge app"
+        - "WowUp"
+        - "Wago app"
+        - "Downloaded zip (CurseForge, Wago or GitHub website)"
+        - "Development checkout (git)"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: forever-preset
+    attributes:
+      label: "WoW: Forever experience preset"
+      description: Forever asks at login for a Classic or an Enhanced experience. It changes default UI settings. Leave empty on other clients.
+      options:
+        - "Classic"
+        - "Enhanced"
+        - "I don't know"
+    validations:
+      required: false
+
+  - type: textarea
+    id: error-text
+    attributes:
+      label: Error text from BugSack
+      description: |
+        Install BugGrabber and BugSack, reproduce the problem, open BugSack and paste the first error in full (message, stack and locals).
+        No addon manager? Type `/console scriptErrors 1` to see errors in the default UI. Write "no error" if nothing appears.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you do, starting from login? Mention combat, instances, groups or /reload if they matter.
+      placeholder: |
+        1. Log in on a level 20 hunter
+        2. Open the bags
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: Expected and actual result
+      description: What should have happened, and what happened instead? Screenshots help.
+    validations:
+      required: true
+
+  - type: textarea
+    id: isolation
+    attributes:
+      label: Does it happen with only Tx Example enabled?
+      description: |
+        Disable every other addon except BugGrabber/BugSack and try again, or use the Bisector addon (`/bisect start +Tx_Example`).
+        Tell us the result, and list the other addons if the problem only happens together with them.
+    validations:
+      required: true
+
+  - type: input
+    id: last-good
+    attributes:
+      label: Last version that worked
+      description: If an update broke it, which version worked before?
+    validations:
+      required: false

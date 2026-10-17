@@ -1,0 +1,98 @@
+# Checks for this toolkit on every push to main and every pull request. Uses no secrets.
+# Every step can be run locally with the same command (README.md, "Checks").
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    name: Scripts, link tools and templates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Every .sh file must be stored as executable (mode 100755). Git for Windows does not track
+      # the executable bit (core.filemode=false), so a script added there is stored as 100644 and
+      # fails on macOS and Linux with "Permission denied". Fix: git update-index --chmod=+x FILE
+      - name: Shell scripts are executable in git
+        run: |
+          bad=$(git ls-files -s -- '*.sh' | awk -F '\t' '{ split($1, m, " "); if (m[1] != "100755") print m[1] "\t" $2 }')
+          if [ -n "$bad" ]; then
+            printf '%s\n' "$bad" | while IFS="$(printf '\t')" read -r mode f; do
+              echo "::error file=$f::$f is stored with mode $mode, not 100755 (executable). Fix: git update-index --chmod=+x '$f'"
+            done
+            exit 1
+          fi
+          echo "Every .sh file is executable."
+
+      - name: shellcheck
+        run: git ls-files -z -- '*.sh' | xargs -0 shellcheck -s bash
+
+      - name: devsetup self-test (path lint fixtures)
+        run: python3 devsetup/tests/selftest.py
+
+      # bash on the runner, and PowerShell 7 (preinstalled on GitHub's Ubuntu runners).
+      - name: Link scripts on fake WoW installs
+        run: bash devsetup/tests/test_link_scripts.sh
+
+      - name: check-toc.sh cases
+        run: bash templates/tests/test_check_toc.sh
+
+      - uses: leafo/gh-actions-lua@6919171ccf181b826f44b9bca76307b577217377 # v13.0.0
+        with:
+          luaVersion: "5.1"
+      - uses: leafo/gh-actions-luarocks@35d062def313a7699a0d513e996bcf4352f05389 # v6.1.0
+
+      - name: Install luacheck
+        run: luarocks install luacheck 1.2.0
+
+      - name: luacheck on the templates
+        run: |
+          (cd templates/addon-repo && luacheck . --no-color --codes)
+          (cd templates/shared-lib && luacheck . --no-color --codes)
+
+      # The same packager commit as the templates' workflows.
+      - name: Fetch the BigWigs packager (0f24d21)
+        run: |
+          git clone --quiet https://github.com/BigWigsMods/packager "$RUNNER_TEMP/packager"
+          git -C "$RUNNER_TEMP/packager" checkout --quiet 0f24d2169de3ceb3b79a981311b2ebab4c6160c7
+
+      # set-team.sh with token Ks, new-addon-repo.sh, the addon's CI checks, packager -d, the
+      # packaged-folder check and the Lua 5.1 smoke harness, vendored patchwatch, negative controls.
+      - name: Templates end to end
+        env:
+          LUA: lua
+        run: bash templates/tests/test_new_addon.sh --packager "$RUNNER_TEMP/packager/release.sh"
+
+  patchwatch:
+    name: patchwatch (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install patchwatch with its test extra
+        run: python -m pip install "./patchwatch[test]"
+
+      - name: pytest
+        working-directory: patchwatch
+        run: python -m pytest -q -p no:cacheprovider

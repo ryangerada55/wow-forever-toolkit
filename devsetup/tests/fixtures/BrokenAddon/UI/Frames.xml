@@ -1,0 +1,13 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="frames.lua"/>
+	<Include file="Missing.xml"/>
+	<!-- <Script file="commented.lua"/> is ignored -->
+	<Frame name="BrokenAddonFrame">
+		<Layers>
+			<Layer level="ARTWORK">
+				<Texture file="Interface\AddOns\BrokenAddon\Media\Bar"/>
+				<FontString font="Interface\AddOns\BrokenAddon\Media\Font.ttf"/>
+			</Layer>
+		</Layers>
+	</Frame>
+</Ui>

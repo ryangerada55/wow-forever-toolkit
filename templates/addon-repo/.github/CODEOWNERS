@@ -1,0 +1,12 @@
+# Who must review what (annotated version: CODEOWNERS.example in the team templates).
+# Takes effect when the main-branch ruleset has "Require review from Code Owners" on.
+# Owners need write access; a team needs explicit write access to this repository.
+# The last matching line wins.
+
+*                   @YOUR-ORG/addon-devs
+
+# What ships to players and how: release managers review.
+/.github/           @YOUR-ORG/release-managers
+/.pkgmeta           @YOUR-ORG/release-managers
+/*.toc              @YOUR-ORG/release-managers
+/LICENSE            @YOUR-ORG/release-managers

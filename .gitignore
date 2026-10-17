@@ -1,0 +1,31 @@
+# Python: bytecode, test and build output, virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# patchwatch state, mirror cache and reports, when it runs from this repository
+# (its default cache is outside the repository: ~/Library/Caches/patchwatch, %LOCALAPPDATA%\patchwatch)
+.patchwatch/
+patchwatch-out/
+state.json
+.cache/
+
+# BigWigs packager output and local packager tokens (CF_API_TOKEN=..., WAGO_API_TOKEN=...)
+.release/
+.env
+.env.*
+
+# OS and editor clutter (macOS, Windows)
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*~

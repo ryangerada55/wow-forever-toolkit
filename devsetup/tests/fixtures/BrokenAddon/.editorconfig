@@ -1,0 +1,3 @@
+# BrokenAddon.toc starts with a UTF-8 BOM on purpose: check_paths.py must flag it.
+[BrokenAddon.toc]
+charset = unset

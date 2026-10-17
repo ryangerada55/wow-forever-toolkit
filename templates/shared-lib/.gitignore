@@ -1,0 +1,15 @@
+# Packager output (a local "release.sh -d" in this repository writes it)
+.release/
+
+# Local packager secrets. Never commit them.
+.env
+
+# OS and editor clutter (macOS, Windows)
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*~

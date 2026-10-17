@@ -1,0 +1,43 @@
+# Line endings for a WoW addon team working on both macOS and Windows.
+# Copy this file to the root of every addon repository. Inside
+# wow-forever-toolkit it applies to the devsetup/ folder.
+#
+# Why LF everywhere (evidence in handson_xplat.md):
+# - The game loads CRLF and LF files alike. The BigWigs packager writes CRLF by
+#   default and Mac players run those zips (BigWigs v427.6 is CRLF only).
+# - The packager rewrites .lua .md .toc .txt .xml line endings on output anyway
+#   (CRLF by default, LF with -u), so repository line endings never reach players.
+# - Git for Windows installs with core.autocrlf=true. Without this file a Windows
+#   checkout gets CRLF, and bash scripts then fail with "$'\r': command not found".
+# - Fixing LF in the repository keeps diffs clean between Mac and Windows users.
+* text=auto eol=lf
+
+*.lua    text eol=lf
+*.toc    text eol=lf
+*.xml    text eol=lf
+*.md     text eol=lf
+*.txt    text eol=lf
+*.json   text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.py     text eol=lf
+*.sh     text eol=lf
+.pkgmeta text eol=lf
+# PowerShell 5.1 and 7 run LF scripts; keep .ps1 files ASCII-only (5.1 reads
+# BOM-less files in the ANSI code page).
+*.ps1    text eol=lf
+# cmd.exe batch files are the one exception.
+*.cmd    text eol=crlf
+*.bat    text eol=crlf
+
+# Game assets and archives: never convert.
+*.blp    binary
+*.tga    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.ogg    binary
+*.mp3    binary
+*.ttf    binary
+*.otf    binary
+*.zip    binary

@@ -1,0 +1,143 @@
+# Package and publish a release when a maintainer pushes a version tag (RELEASING.md):
+#   git tag -a v1.2.0 -m v1.2.0 && git push origin v1.2.0                -> "release" file
+#   git tag -a v1.2.0-beta.1 -m v1.2.0-beta.1 && git push origin v1.2.0-beta.1 -> "beta" file
+# The packager picks the CurseForge/Wago file type from the tag: "alpha" in the tag -> alpha,
+# "beta" -> beta, anything else -> release. That is why "-rc" tags are refused below.
+#
+# Uploads go to every site whose ID is set in the TOC (## X-Curse-Project-ID, ## X-Wago-ID,
+# ## X-WoWI-ID; 0 = skip) and whose token is set. A GitHub Release with the zip is always made.
+# CurseForge also needs the repository variable CURSEFORGE_UPLOADS = on (Settings > Secrets and
+# variables > Actions > Variables). Until then the packager runs with -p 0: no CurseForge upload,
+# Wago and the GitHub Release as usual. Set it after CurseForge approves the project; the first
+# CurseForge file is uploaded by hand (RELEASING.md, "First publication on CurseForge").
+# Secrets (Settings > Secrets and variables > Actions; or an organization secret shared with
+# selected repositories), all created from the release owner's own account:
+#   CF_API_TOKEN    CurseForge API token  https://authors.curseforge.com/#/settings/api-tokens
+#   WAGO_API_TOKEN  Wago Addons API key   https://addons.wago.io/account/apikeys
+#   WOWI_API_TOKEN  WoWInterface token, only if you also ship retail or Classic (no Forever there)
+# Tags pushed by a workflow with GITHUB_TOKEN do not start this workflow; tag from your machine.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  # To publish an alpha on every push to main (BigWigs/DBM style), also add:
+  #   branches: [main]
+  # and drop the tag check below for branch pushes.
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  # Lint plus the test package: the tag's zip is built once without uploading, its folder is
+  # checked against the TOC and smoke-loaded (lint.yml), and only then does "release" publish.
+  lint:
+    uses: ./.github/workflows/lint.yml
+    permissions:
+      contents: read
+    with:
+      skip-package: false
+
+  release:
+    needs: lint
+    # Forks never publish.
+    if: github.repository_owner == 'YOUR-ORG'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Optional (public repositories, or private ones on a paid plan): create an environment
+    # named "release" with deployment tags "v*", move the secrets into it and uncomment:
+    # environment: release
+    permissions:
+      contents: write # create the GitHub Release and attach the zip
+    steps:
+      - name: Check the tag name
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta)\.?[0-9]+)?$ ]]; then
+            echo "::error::Tag '$TAG' is not vMAJOR.MINOR.PATCH, vX.Y.Z-beta.N or vX.Y.Z-alpha.N. Nothing was published. A release manager deletes the tag (git push origin :refs/tags/$TAG; the only tag that may be deleted, RELEASING.md) and you push a valid one."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # previous tag, changelog range and @project-revision@
+          persist-credentials: false
+
+      - name: Check upload IDs against tokens
+        env:
+          HAS_CF_TOKEN: ${{ secrets.CF_API_TOKEN != '' }}
+          HAS_WAGO_TOKEN: ${{ secrets.WAGO_API_TOKEN != '' }}
+          # Repository variable: "on" once CurseForge has approved the project (RELEASING.md).
+          CF_UPLOADS: ${{ vars.CURSEFORGE_UPLOADS }}
+        run: |
+          status=0
+          # Same test as the packager step's args: GitHub compares strings ignoring case.
+          cf_on=0
+          case "$(printf '%s' "$CF_UPLOADS" | tr '[:upper:]' '[:lower:]')" in
+            on) cf_on=1 ;;
+            "" | off) ;;
+            *) echo "::warning::Repository variable CURSEFORGE_UPLOADS is '$CF_UPLOADS'. Only 'on' turns CurseForge uploads on; anything else leaves them off." ;;
+          esac
+          if [[ "$cf_on" -eq 1 ]]; then
+            echo "CurseForge uploads: on (CURSEFORGE_UPLOADS=on)"
+          else
+            echo "CurseForge uploads: off (CURSEFORGE_UPLOADS is not 'on'); the packager runs with -p 0"
+          fi
+          for toc in *.toc; do
+            cf=$(tr -d '\r' < "$toc" | sed -n 's/^## X-Curse-Project-ID:[[:space:]]*//p' | head -n 1)
+            wago=$(tr -d '\r' < "$toc" | sed -n 's/^## X-Wago-ID:[[:space:]]*//p' | head -n 1)
+            echo "$toc: CurseForge ID '${cf:-missing}', Wago ID '${wago:-missing}'"
+            if [[ -z "$cf" || "$cf" == "0" ]]; then
+              if [[ "$cf_on" -eq 1 ]]; then
+                echo "::warning file=$toc::CURSEFORGE_UPLOADS is on, but X-Curse-Project-ID is 0 or missing: nothing is uploaded to CurseForge."
+              else
+                echo "::notice file=$toc::No CurseForge project ID yet: nothing is uploaded to CurseForge."
+              fi
+            elif [[ "$cf_on" -eq 0 ]]; then
+              echo "::notice file=$toc::CurseForge uploads are off until the repository variable CURSEFORGE_UPLOADS is 'on' (set it after CurseForge approves the project). Wago and the GitHub Release run as usual."
+            elif [[ "$HAS_CF_TOKEN" != "true" ]]; then
+              echo "::error file=$toc::X-Curse-Project-ID is set and CURSEFORGE_UPLOADS is on, but the CF_API_TOKEN secret is missing."
+              status=1
+            fi
+            if [[ -n "$wago" && "$wago" != "0" && "$HAS_WAGO_TOKEN" != "true" ]]; then
+              echo "::error file=$toc::X-Wago-ID is set but the WAGO_API_TOKEN secret is missing."
+              status=1
+            fi
+          done
+          exit "$status"
+
+      # The packager installs Subversion by itself only for WowAce/CurseForge URLs that contain
+      # /trunk; any other svn external fails with "svn is not available". Commented-out lines
+      # in .pkgmeta do not count.
+      - name: Install Subversion for svn externals
+        run: |
+          if grep -Eq '^[[:space:]]*([^#[:space:]].*)?(repos\.(wowace|curseforge)\.com|svn\.(wowace|curseforge)\.com|svn://|type:[[:space:]]*svn)' .pkgmeta; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq subversion
+            svn --version --quiet
+          else
+            echo "No svn externals in .pkgmeta."
+          fi
+
+      # Pinned to master (2026-10-10): the v2 tag (v2.6.1) lacks the October Forever fixes.
+      # Trade-off (RELEASING.md, "Packager version"): on this commit a failed CurseForge upload
+      # also stops Wago and the GitHub Release; v2.6.1 would carry on with them.
+      - uses: BigWigsMods/packager@0f24d2169de3ceb3b79a981311b2ebab4c6160c7 # master
+        with:
+          # -p 0 = no CurseForge upload until CURSEFORGE_UPLOADS is "on"; Wago and GitHub still run.
+          # (-p 0 also skips CurseForge @localization@ imports; the template keeps its strings in
+          # Locales/*.lua and does not use them.)
+          args: ${{ vars.CURSEFORGE_UPLOADS != 'on' && '-p 0' || '' }}
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+          WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
+          # The packager does not read GITHUB_TOKEN itself. Master reads GH_API_TOKEN first; the v2
+          # tag ignores it and reads GITHUB_OAUTH. Setting both keeps GitHub Releases working on either.
+          GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}

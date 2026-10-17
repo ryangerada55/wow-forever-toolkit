@@ -1,0 +1,10 @@
+﻿## Interface: 120105, 16001
+## Title: BrokenAddon (lint fixture: every line below is wrong on purpose)
+
+core.lua
+Libs\LibMissing\LibMissing.lua
+Locales\enUS.lua
+UI\\Frames.xml
+modules/Options.lua
+[Game]\Init.lua
+C:\dev\BrokenAddon\Extra.lua

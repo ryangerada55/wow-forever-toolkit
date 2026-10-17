@@ -1,0 +1,13 @@
+## Interface: 16001, 120105, 11509
+## Title: Lib: LibTx-1.0
+## Notes: Shared code for Tx Studio addons. Each addon embeds it; install this folder only for development.
+## Author: Tx Studio
+## Version: @project-version@
+## Category: Libraries
+## X-License: MIT
+
+# Addons do not load this TOC: they embed the folder through .pkgmeta externals and list the
+# two files below in their own TOC. Link this repository into Interface/AddOns only while
+# developing the library itself (devsetup/link-addons).
+LibStub\LibStub.lua
+LibTx-1.0.lua

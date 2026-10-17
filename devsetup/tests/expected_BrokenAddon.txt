@@ -1,0 +1,18 @@
+WARN  BOM     BrokenAddon/BrokenAddon.toc: UTF-8 BOM before the first line (save as UTF-8 without BOM)
+ERROR CASE    BrokenAddon/BrokenAddon.toc:4: TOC entry "core.lua" -> on disk "Core.lua"
+ERROR MISSING BrokenAddon/BrokenAddon.toc:5: TOC entry "Libs/LibMissing/LibMissing.lua" not found in BrokenAddon/
+WARN  SEP     BrokenAddon/BrokenAddon.toc:7: doubled backslash in "UI\\Frames.xml" (escaping is only needed inside quoted Lua strings)
+ERROR CASE    BrokenAddon/BrokenAddon.toc:8: TOC entry "modules/Options.lua" -> on disk "Modules/Options.lua"
+ERROR CASE    BrokenAddon/BrokenAddon.toc:9: TOC entry "[Game]\Init.lua" matches only "Camelot/init.lua" ignoring case
+ERROR SEP     BrokenAddon/BrokenAddon.toc:10: "C:\dev\BrokenAddon\Extra.lua" is an absolute path - use a path relative to the addon folder
+ERROR SEP     BrokenAddon/Core.lua:2: single backslash in a quoted Lua string: "Interface\AddOns\BrokenAddon\Media\bar" is read by Lua as 'InterfaceAddOnsBrokenAddonMedia\x08ar' - write \\ or / (or use [[...]])
+ERROR CASE    BrokenAddon/Core.lua:3: media path "Media/Glow" -> on disk "Media/glow.blp"
+WARN  PREFIX  BrokenAddon/Core.lua:3: "Interface\\Addons" - the folder on disk is "AddOns" (case-sensitive file systems)
+ERROR CASE    BrokenAddon/Core.lua:5: media path "Media/Icon" -> on disk "Media/icon.tga"
+ERROR MISSING BrokenAddon/Core.lua:6: media path "Sounds/alert.ogg" not found in BrokenAddon/
+ERROR CASE    BrokenAddon/Core.lua:7: addon folder written "brokenaddon", on disk "BrokenAddon"
+ERROR CASE    BrokenAddon/Core.lua:8: media path "media" -> on disk "Media"
+ERROR CASE    BrokenAddon/UI/Frames.xml:2: <Script file> "UI/frames.lua" -> on disk "UI/Frames.lua"
+ERROR MISSING BrokenAddon/UI/Frames.xml:3: <Include file> "UI/Missing.xml" not found in BrokenAddon/
+ERROR CASE    BrokenAddon/UI/Frames.xml:8: media path "Media/Bar" -> on disk "Media/bar.tga"
+1 addon folder(s), 18 path reference(s) checked (1 into other addons not scanned, 0 left to .pkgmeta externals): 14 error(s), 3 warning(s) [BOM 1, CASE 9, MISSING 3, PREFIX 1, SEP 3]

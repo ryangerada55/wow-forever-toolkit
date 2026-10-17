@@ -1,0 +1,35 @@
+# LF in the repository and in every checkout, for the whole toolkit. Without this, Git for
+# Windows (core.autocrlf=true) checks out CRLF and the bash scripts (templates/new-addon-repo.sh,
+# templates/addon-repo/.github/scripts/check-toc.sh, devsetup/link-addons.sh) fail in Git Bash
+# with "$'\r': command not found". devsetup/.gitattributes holds the same rules as a file to
+# copy into addon repositories.
+* text=auto eol=lf
+
+*.lua    text eol=lf
+*.toc    text eol=lf
+*.xml    text eol=lf
+*.md     text eol=lf
+*.txt    text eol=lf
+*.json   text eol=lf
+*.toml   text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.py     text eol=lf
+*.sh     text eol=lf
+.pkgmeta text eol=lf
+*.ps1    text eol=lf
+*.cmd    text eol=crlf
+*.bat    text eol=crlf
+
+# Game assets and archives: never convert. (The devsetup test fixtures with these extensions are
+# small placeholder files.)
+*.blp    binary
+*.tga    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.ogg    binary
+*.mp3    binary
+*.ttf    binary
+*.otf    binary
+*.zip    binary

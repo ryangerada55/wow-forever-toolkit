@@ -1,0 +1,6 @@
+## Interface: 16001
+## Title: GoodAddon
+
+Core.lua
+UI\Frames.xml
+Camelot\Init.lua

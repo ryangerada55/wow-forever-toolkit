@@ -1,0 +1,218 @@
+# patchwatch: open or update a GitHub issue when a new WoW build lands in the
+# Gethe/wow-ui-source mirror, with the API changes that matter to this addon.
+#
+# Copy this file to .github/workflows/patchwatch.yml in your addon repository.
+#
+# The workflow installs patchwatch with pip from the team's toolkit repository at a tag:
+#   git+https://github.com/<owner of this repository>/wow-forever-toolkit@v0.2.0#subdirectory=patchwatch
+# Before the first run, push the toolkit to your GitHub organization as a PUBLIC repository named
+# wow-forever-toolkit and tag it v0.2.0 (toolkit README, "Publish the toolkit"). The workflow has
+# no credentials for a private repository. Pinning a tag (or a commit SHA) keeps every run on the
+# same patchwatch; move the pin on purpose when the toolkit releases a new version.
+# Do NOT copy the patchwatch folder into the addon repository: luacheck then lints its Lua test
+# fixtures and fails Lint (so the release workflow, which needs Lint, cannot publish), and the
+# packager ships the whole tool inside every zip. If you vendor it anyway, see the patchwatch
+# README, "Vendoring patchwatch (not recommended)".
+#
+# Repository variables (Settings > Secrets and variables > Actions > Variables), all optional:
+#   PATCHWATCH_PIP_SPEC   pip requirement for patchwatch. Default: the toolkit URL above. Set it
+#                         for another repository name, another tag or a commit SHA, for example
+#                         "git+https://github.com/your-org/wow-forever-toolkit@v0.2.0#subdirectory=patchwatch"
+#   PATCHWATCH_BRANCHES   mirror branches to watch. Default "forever,live,ptr"
+#   PATCHWATCH_ADDON_PATH folder holding your addon(s). Default "." (the repository root)
+#   PATCHWATCH_FAIL_ON    "never" (default), "breaking" or "impact": fail the run when the new
+#                         build has breaking changes ("breaking") or ones that hit your addon ("impact")
+#   PATCHWATCH_STALE_DAYS staleness limits in days, e.g. "14" (every branch) or "forever=7,ptr=60";
+#                         0 = off. Default: forever=10, other branches off
+#   PATCHWATCH_FAIL_ON_ALERT "missing" (default): fail the run while a watched branch is missing
+#                         from the mirror; "any": on every mirror alert; "never"
+#
+# Mirror alerts (a watched branch missing or stale, the forever branch leaving the 1.6x versions,
+# a branch changing game, new or removed mirror branches, a change in the exporter's product list
+# or a branch's export product) appear as warnings in the run and in one issue labelled
+# "patchwatch" with the hidden marker <!-- patchwatch:alerts -->, which gets a comment only when a
+# new alert appears. When the mirror creates a branch for WoW: Forever's launch product, add it to
+# PATCHWATCH_BRANCHES (PATCH_DAY.md, "Launch day").
+#
+# State (the last build seen per branch) and the mirror cache live in .patchwatch/, carried
+# between runs with actions/cache. If the cache is evicted, the next run records a new
+# baseline and reports nothing; run the workflow manually with "since" to catch up.
+
+name: patchwatch
+
+on:
+  schedule:
+    # Every 3 hours at minute 23. The mirror is exported on demand (no fixed schedule),
+    # so polling more often than hourly gains little.
+    - cron: "23 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: "Mirror branches to check (comma-separated)"
+        required: false
+        default: ""
+      since:
+        description: "Compare from this build instead of the saved state (e.g. first, -1, 2026-10-01). A branch with fewer builds gets a new baseline instead"
+        required: false
+        default: ""
+      fail_on:
+        description: "Fail the run on: never, breaking, impact"
+        required: false
+        type: choice
+        options: [never, breaking, impact]
+        default: never
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: patchwatch-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PATCHWATCH_PIP_SPEC: ${{ vars.PATCHWATCH_PIP_SPEC || format('git+https://github.com/{0}/wow-forever-toolkit@v0.2.0#subdirectory=patchwatch', github.repository_owner) }}
+      BRANCHES: ${{ inputs.branches || vars.PATCHWATCH_BRANCHES || 'forever,live,ptr' }}
+      ADDON_PATH: ${{ vars.PATCHWATCH_ADDON_PATH || '.' }}
+      FAIL_ON: ${{ inputs.fail_on || vars.PATCHWATCH_FAIL_ON || 'never' }}
+      STALE_DAYS: ${{ vars.PATCHWATCH_STALE_DAYS }}
+      FAIL_ON_ALERT: ${{ vars.PATCHWATCH_FAIL_ON_ALERT || 'missing' }}
+      SINCE: ${{ inputs.since }}
+    steps:
+      - name: Check out the addon repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install patchwatch
+        run: |
+          if ! python -m pip install "$PATCHWATCH_PIP_SPEC"; then
+            echo "::error::Could not install patchwatch from '$PATCHWATCH_PIP_SPEC'. Push the toolkit to this organization as the public repository wow-forever-toolkit and tag it v0.2.0, or set the repository variable PATCHWATCH_PIP_SPEC (patchwatch README, GitHub Actions)."
+            exit 1
+          fi
+          patchwatch --version
+
+      - name: Restore patchwatch state and mirror cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .patchwatch
+          key: patchwatch-${{ github.run_id }}
+          restore-keys: |
+            patchwatch-
+
+      - name: Check for new builds
+        id: check
+        run: |
+          args=(--cache-dir .patchwatch/cache
+                check --state .patchwatch/state.json --branches "$BRANCHES"
+                --out-dir patchwatch-out --addon "$ADDON_PATH" --exclude "*.test.lua"
+                --fail-on "$FAIL_ON" --fail-on-alert "$FAIL_ON_ALERT")
+          if [ -n "$STALE_DAYS" ]; then
+            args+=(--stale-days "$STALE_DAYS")
+          fi
+          if [ -n "$SINCE" ]; then
+            args+=(--since "$SINCE")
+          fi
+          # A vendored copy (PATCHWATCH_PIP_SPEC names a folder of this repository) is a tool, not
+          # part of the addon: keep its Lua test fixtures out of the scan.
+          if [ -d "$PATCHWATCH_PIP_SPEC" ]; then
+            vendored=${PATCHWATCH_PIP_SPEC#./}
+            args+=(--exclude "${vendored%/}/*")
+          fi
+          set +e
+          patchwatch "${args[@]}"
+          rc=$?
+          set -e
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          # 0 = ok; 3 = --fail-on, 4 = --fail-on-alert condition met (each handled by one of the
+          # last two steps); anything else is an error
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ] && [ "$rc" -ne 4 ]; then
+            exit "$rc"
+          fi
+          if [ -f patchwatch-out/summary.json ]; then
+            jq -r '.branches | to_entries[] | "\(.key): \(.value.status)"' patchwatch-out/summary.json >> "$GITHUB_STEP_SUMMARY"
+            jq -r '.alerts[] | "::warning title=patchwatch mirror alert::\(.message)"' patchwatch-out/summary.json
+            jq -r '.alerts[] | "- alert: \(.message)"' patchwatch-out/summary.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Save patchwatch state and mirror cache
+        if: always() && steps.check.outcome != 'skipped'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .patchwatch
+          key: patchwatch-${{ github.run_id }}
+
+      - name: Upload reports
+        if: always() && steps.check.outcome != 'skipped'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: patchwatch-reports
+          path: patchwatch-out
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Open or update issues
+        if: steps.check.outputs.rc == '0' || steps.check.outputs.rc == '3' || steps.check.outputs.rc == '4'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          summary=patchwatch-out/summary.json
+          gh label create patchwatch --color FBCA04 --description "New WoW build report from patchwatch" 2>/dev/null || true
+          # Mirror alerts: one issue, updated whenever a new alert appears.
+          if [ "$(jq '.new_alerts | length' "$summary")" -gt 0 ]; then
+            marker=$(jq -r '.alerts_marker' "$summary")
+            number=$(gh issue list --label patchwatch --state open --limit 100 --json number,body \
+              | jq -r --arg m "$marker" '[.[] | select(.body | contains($m))][0].number // empty')
+            if [ -n "$number" ]; then
+              gh issue edit "$number" --body-file patchwatch-out/alerts.md
+              gh issue comment "$number" --body "New mirror alert(s): $(jq -r '.new_alerts | join(", ")' "$summary"). Run: $RUN_URL"
+              echo "Updated alerts issue #$number"
+            else
+              gh issue create --title "[patchwatch] mirror alerts" --label patchwatch --body-file patchwatch-out/alerts.md
+              echo "Opened the alerts issue"
+            fi
+          fi
+          mapfile -t branches < <(jq -r '.notify_branches[]' "$summary")
+          if [ "${#branches[@]}" -eq 0 ]; then
+            echo "No new build to report."
+            exit 0
+          fi
+          for b in "${branches[@]}"; do
+            title=$(jq -r --arg b "$b" '.branches[$b].issue_title' "$summary")
+            marker=$(jq -r --arg b "$b" '.branches[$b].marker' "$summary")
+            body="patchwatch-out/$b.md"
+            # One open issue per mirror branch, found by the hidden marker on the first line of the body.
+            number=$(gh issue list --label patchwatch --state open --limit 100 --json number,body \
+              | jq -r --arg m "$marker" '[.[] | select(.body | contains($m))][0].number // empty')
+            if [ -n "$number" ]; then
+              gh issue edit "$number" --title "$title" --body-file "$body"
+              gh issue comment "$number" --body "New build reported: **$title**. The issue description now holds the latest report. Run: $RUN_URL"
+              echo "Updated issue #$number for $b"
+            else
+              gh issue create --title "$title" --label patchwatch --body-file "$body"
+              echo "Opened an issue for $b"
+            fi
+          done
+
+      - name: Fail when the new build breaks this addon
+        if: steps.check.outputs.rc == '3'
+        run: |
+          echo "::error::patchwatch: the new build has changes matching --fail-on $FAIL_ON. See the issue and the patchwatch-reports artifact."
+          exit 1
+
+      - name: Fail on mirror alerts
+        if: steps.check.outputs.rc == '4'
+        run: |
+          echo "::error::patchwatch: mirror alerts matching --fail-on-alert $FAIL_ON_ALERT (see the warnings above and the alerts issue). A missing branch means patchwatch is blind for it: fix PATCHWATCH_BRANCHES."
+          exit 1

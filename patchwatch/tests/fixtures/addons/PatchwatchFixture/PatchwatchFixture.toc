@@ -1,0 +1,6 @@
+## Interface: 120100, 16001
+## Title: Patchwatch Fixture
+## Version: @project-version@
+Core.lua
+UI.xml
+Forever.lua [AllowLoadGameType forever]

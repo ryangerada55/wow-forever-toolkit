@@ -1,0 +1,10 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Frame name="PatchwatchFixtureFrame">
+		<Scripts>
+			<OnLoad>
+				self.value = C_Foo.StatFunc()
+			</OnLoad>
+			<OnShow function="UnitFoo"/>
+		</Scripts>
+	</Frame>
+</Ui>

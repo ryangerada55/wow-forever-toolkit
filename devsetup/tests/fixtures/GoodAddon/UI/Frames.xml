@@ -1,0 +1,10 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Script file="Frames.lua"/>
+	<Frame name="GoodAddonFrame">
+		<Layers>
+			<Layer level="ARTWORK">
+				<Texture file="Interface\AddOns\GoodAddon\Media\bar"/>
+			</Layer>
+		</Layers>
+	</Frame>
+</Ui>

@@ -1,0 +1,8 @@
+# .pkgmeta of the shared library. Addons pull this repository in as a packager "external";
+# for externals the packager reads only "ignore" and "plain-copy" from this file, so anything
+# listed under ignore stays out of every addon's Libs/LibTx-1.0 folder.
+package-as: LibTx-1.0
+
+ignore:
+  - README.md
+  - CHANGELOG.md

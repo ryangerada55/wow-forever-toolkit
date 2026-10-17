@@ -1,0 +1,55 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## ExcludeLoadGameType: standard, classic
+## Title: Tx Example
+## Notes: One sentence that says what this addon does.
+## Author: Tx Studio
+## Version: @project-version@
+## Category: Tx Studio
+## SavedVariables: TxExampleDB
+## OptionalDeps: LibTx-1.0
+## X-License: MIT
+## X-Website: https://github.com/YOUR-ORG/Tx_Example
+
+# ---------------------------------------------------------------------------
+# Game flavors. One TOC for every client; bump the numbers on patch day (PATCH_DAY.md).
+#   16001  = WoW: Forever 1.60.1 (every beta build so far; re-check on the launch client)
+#
+# Forever only (the default): the two LoadGameType lines at the top keep the addon off
+# retail and Classic, even where they share one AddOns folder with Forever. "camelot" is
+# the client's name for Forever; every tested client knows "standard" (retail) and
+# "classic" (the Classic flavors). Use only these words: a client ignores game types it
+# does not know, so an Allow line alone does not keep the addon off retail or Classic,
+# and no Blizzard TOC uses "forever". Details: README.md, "Game flavors and the TOC".
+#
+# Also retail and/or Classic Era? Delete the two LoadGameType lines and append the numbers:
+#   ## Interface: 16001, 120105, 11509
+#   120105 = retail 12.1.5      11509 = Classic Era 1.15.9
+# then add the flavor to SUPPORTED_FLAVORS in Core.lua. Check a client's number in game
+# with: /dump (select(4, GetBuildInfo()))
+#
+# Never add a second TOC with "## Interface: 00000" (an "unsupported client" stub): the
+# packager reads it as retail and tags the CurseForge and Wago uploads for retail too.
+# Split into Tx_Example_Camelot.toc (never _Forever.toc: the packager ignores that suffix)
+# and Tx_Example_Mainline.toc only when the clients need different file lists.
+#
+# Upload IDs read by the BigWigs packager. 0 = do not upload. Keep these lines even while
+# they are 0: a missing line lets the packager borrow the ID of another folder in the zip.
+# The CurseForge ID can go in as soon as the project exists: CI uploads to CurseForge only
+# once the repository variable CURSEFORGE_UPLOADS is "on" (RELEASING.md).
+#   X-Curse-Project-ID = number in the "About Project" box on CurseForge
+#   X-Wago-ID          = project ID from the Wago Addons developer dashboard
+#   X-WoWI-ID          = WoWInterface addon number (WoWInterface does not list Forever)
+# ---------------------------------------------------------------------------
+## X-Curse-Project-ID: 0
+## X-Wago-ID: 0
+## X-WoWI-ID: 0
+
+# Shared team library, fetched into Libs\ by the packager (.pkgmeta externals).
+#@no-lib-strip@
+Libs\LibTx-1.0\LibStub\LibStub.lua
+Libs\LibTx-1.0\LibTx-1.0.lua
+#@end-no-lib-strip@
+
+Locales\enUS.lua
+Core.lua

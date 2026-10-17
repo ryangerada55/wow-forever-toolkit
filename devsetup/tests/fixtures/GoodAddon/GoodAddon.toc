@@ -1,0 +1,6 @@
+## Interface: 120105, 16001
+## Title: GoodAddon (lint fixture: all paths correct)
+
+Core.lua
+UI\Frames.xml
+[Game]\Init.lua [AllowLoadGameType camelot, mainline]

@@ -1,0 +1,67 @@
+name: Feature request
+description: Suggest an idea or an improvement for Tx Example.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem first and the solution second: we may find a different way to solve it.
+        Some ideas are impossible on purpose: Blizzard blocks addons from reading many values in combat
+        on WoW: Forever and retail ("secret values"), and the combat log is closed to addons there.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you suggest
+      options:
+        - label: I searched the open and closed issues and this has not been suggested yet.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: What are you trying to do in game, and what gets in the way today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: Describe the behavior you have in mind. Mock-ups and screenshots are welcome.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: flavors
+    attributes:
+      label: Game flavors it applies to
+      multiple: true
+      options:
+        - "WoW: Forever"
+        - "Retail (Midnight)"
+        - "Classic Era"
+        - "Other Classic clients"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: combat
+    attributes:
+      label: Does it need information during combat?
+      description: For example health, auras, cooldowns or cast bars of units while fighting.
+      options:
+        - "Yes"
+        - "No"
+        - "Not sure"
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and other addons
+      description: Workarounds you use today, or other addons that do something similar.
+    validations:
+      required: false

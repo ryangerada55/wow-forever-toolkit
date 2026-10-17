@@ -1,0 +1,14 @@
+# Weekly pull requests that bump the actions pinned in .github/workflows (SHA plus version comment).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+    ignore:
+      # Pinned to a commit on master on purpose (newer than its newest release, v2.6.1).
+      # Update it by hand: RELEASING.md, "Packager version", and PATCH_DAY.md, "Patch day".
+      - dependency-name: BigWigsMods/packager

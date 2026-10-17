@@ -1,0 +1,35 @@
+# CODEOWNERS example for a Tx Studio repository. Copy to .github/CODEOWNERS (GitHub also looks
+# in the repository root and docs/, in that order, and uses the first one it finds).
+#
+# How it works (GitHub docs, about-code-owners):
+# - Code owners are asked to review every pull request that touches their files. With the main
+#   ruleset's "Require review from Code Owners", their approval is needed to merge.
+# - Owners must have write access. A team must be visible (not secret) and have explicit write
+#   access to the repository, even if its members already have access another way.
+# - The LAST matching pattern wins, so put the general rule first and the specific ones after.
+# - Several owners for one pattern go on the same line; any one of them can approve.
+# - Patterns are case-sensitive on GitHub, even though macOS and Windows disks are not.
+# - Unlike .gitignore: no "!" negation, no [a-z] ranges, no "\#" escapes.
+# - A line with a syntax error, or an owner that does not exist, is skipped (GitHub shows the
+#   error when you open the file on github.com).
+#
+# Teams used below (create them under the organization, both visible):
+#   @YOUR-ORG/addon-devs        everyone who writes addon code (write access)
+#   @YOUR-ORG/release-managers  two or more people who may tag releases (maintain access)
+
+# Default owner for everything.
+*                       @YOUR-ORG/addon-devs
+
+# Files that decide what ships to players, where it is uploaded and who can do it.
+# GitHub recommends code owners on .github/workflows so workflow changes need approval.
+/.github/               @YOUR-ORG/release-managers
+/.pkgmeta               @YOUR-ORG/release-managers
+/*.toc                  @YOUR-ORG/release-managers
+/LICENSE                @YOUR-ORG/release-managers
+
+# Saved-variable migrations can destroy players' settings: two pairs of eyes.
+# (Adjust the path to where your addon keeps its database code.)
+/Database.lua           @YOUR-ORG/addon-devs @YOUR-ORG/release-managers
+
+# Translations: translators may review each other's locale files.
+# /Locales/deDE.lua     @translator-github-name

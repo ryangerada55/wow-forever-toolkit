@@ -1,0 +1,12 @@
+# Issue chooser: only the forms in this folder, plus these links.
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help with setup
+    url: https://discord.gg/YOUR-INVITE
+    about: Ask on the Tx Studio Discord. Issues are for bugs and feature requests only.
+  - name: How to report a bug (error text, game build, addon folders on macOS and Windows)
+    url: https://github.com/YOUR-ORG/.github/blob/main/SUPPORT.md
+    about: Read this first if you are not sure what to put in a bug report.
+  - name: Problem with another Tx Studio addon
+    url: https://github.com/YOUR-ORG
+    about: Each addon has its own repository. Open the issue there.
